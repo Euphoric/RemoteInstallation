@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace RemoteInstallation
 {
     public class RemoteInstaller
     {
         private readonly IRemoteComputerInstallator _installator;
-        private InstallationTask _installationTask;
+        private readonly List<InstallationTask> _installationTasks = new List<InstallationTask>();
 
         public RemoteInstaller(IRemoteComputerInstallator installator)
         {
@@ -14,15 +15,20 @@ namespace RemoteInstallation
 
         public InstallationTask CreateTask(string installation, string computer)
         {
-            _installationTask = new InstallationTask(installation, computer);
+            var installationTask = new InstallationTask(installation, computer);
 
-            return _installationTask;
+            _installationTasks.Add(installationTask);
+
+            return installationTask;
         }
 
         public void Iterate()
         {
-            _installator.InstallOnComputer(_installationTask.Installation, _installationTask.Computer);
-            _installationTask.Status = InstalationTaskStatus.Installing;
+            foreach (var installationTask in _installationTasks)
+            {
+                _installator.InstallOnComputer(installationTask.Installation, installationTask.Computer);
+                installationTask.Status = InstalationTaskStatus.Installing;
+            }
         }
     }
 }
