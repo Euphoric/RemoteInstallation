@@ -8,9 +8,9 @@ namespace RemoteInstallation
 {
     public class RemoteComputerInstallator : IRemoteComputerInstallator
     {
-        public struct ActiveInstallation
+        public class ActiveInstallation
         {
-            public ActiveInstallation(string installation, string computer) : this()
+            public ActiveInstallation(string installation, string computer)
             {
                 Installation = installation;
                 Computer = computer;
@@ -18,6 +18,7 @@ namespace RemoteInstallation
 
             public string Installation { get; }
             public string Computer { get; }
+            public bool Finish { get; set; }
         }
 
         public List<ActiveInstallation> ActiveInstallations { get;  } = new List<ActiveInstallation>();
@@ -25,6 +26,20 @@ namespace RemoteInstallation
         public void InstallOnComputer(string installation, string computer)
         {
             ActiveInstallations.Add(new ActiveInstallation(installation, computer));
+        }
+
+        public bool GetFinishStatus(string installation, string computer)
+        {
+            var queriedInstallation = ActiveInstallations.Single(x => x.Installation == installation && x.Computer == computer);
+            if (queriedInstallation.Finish)
+                ActiveInstallations.Remove(queriedInstallation);
+            return queriedInstallation.Finish;
+        }
+
+        public void FinishInstallation(string installation, string computer)
+        {
+            var installationToFinish = ActiveInstallations.Single(x => x.Installation == installation && x.Computer == computer);
+            installationToFinish.Finish = true;
         }
     }
 
@@ -97,6 +112,58 @@ namespace RemoteInstallation
             Assert.AreEqual("ComputerY", activeInstallation2.Computer);
 
             Assert.AreEqual(InstalationTaskStatus.Installing, task.Status);
+        }
+
+        [Test]
+        public void Iterating_again_should_not_result_in_multiple_installations()
+        {
+            RemoteComputerInstallator installator = new RemoteComputerInstallator();
+            RemoteInstaller ri = new RemoteInstaller(installator);
+            var task = ri.CreateTask("WorkX", "ComputerX");
+
+            Assert.AreEqual(0, installator.ActiveInstallations.Count);
+
+            ri.Iterate();
+            ri.Iterate();
+
+            Assert.AreEqual(1, installator.ActiveInstallations.Count);
+
+            Assert.AreEqual(InstalationTaskStatus.Installing, task.Status);
+        }
+
+        [Test]
+        public void Finished_installation_should_be_reflected_in_task()
+        {
+            RemoteComputerInstallator installator = new RemoteComputerInstallator();
+            RemoteInstaller ri = new RemoteInstaller(installator);
+            var task = ri.CreateTask("WorkX", "ComputerX");
+
+            Assert.AreEqual(0, installator.ActiveInstallations.Count);
+
+            ri.Iterate();
+
+            installator.FinishInstallation("WorkX", "ComputerX");
+
+            ri.Iterate();
+
+            Assert.AreEqual(InstalationTaskStatus.Success, task.Status);
+        }
+
+        [Test]
+        public void Should_not_query_for_finished_installations_when_done()
+        {
+            RemoteComputerInstallator installator = new RemoteComputerInstallator();
+            RemoteInstaller ri = new RemoteInstaller(installator);
+            var task = ri.CreateTask("WorkX", "ComputerX");
+
+            Assert.AreEqual(0, installator.ActiveInstallations.Count);
+
+            ri.Iterate();
+
+            installator.FinishInstallation("WorkX", "ComputerX");
+
+            ri.Iterate();
+            ri.Iterate();
         }
     }
 }

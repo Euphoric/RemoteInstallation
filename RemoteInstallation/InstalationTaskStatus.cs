@@ -3,6 +3,7 @@
     public enum InstalationTaskStatus
     {
         Standby,
-        Installing
+        Installing,
+        Success
     }
 }
