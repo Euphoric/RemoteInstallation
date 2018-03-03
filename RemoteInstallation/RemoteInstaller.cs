@@ -1,19 +1,20 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 
 namespace RemoteInstallation
 {
     public class RemoteInstaller
     {
+        private readonly SynchronizationContext _context;
         private readonly IRemoteComputerInstallator _installator;
         private readonly ObservableCollection<InstallationTask> _installationTasks = new ObservableCollection<InstallationTask>();
-        private readonly ConcurrentQueue<Action> _synchQueue = new ConcurrentQueue<Action>();
 
-        public RemoteInstaller(IRemoteComputerInstallator installator)
+        public RemoteInstaller(SynchronizationContext context, IRemoteComputerInstallator installator)
         {
+            _context = context;
             _installator = installator;
         }
 
@@ -24,7 +25,7 @@ namespace RemoteInstallation
             var installationTasks = computers.Select(pc => new ComputerInstallationTask(installation, pc)).ToList();
             var installationTask = new InstallationTask(installation, installationTasks);
 
-            _synchQueue.Enqueue(() => { _installationTasks.Add(installationTask); });
+            _installationTasks.Add(installationTask);
 
             return installationTask;
         }
@@ -36,22 +37,10 @@ namespace RemoteInstallation
 
         public void Iterate()
         {
-            _synchQueue.Enqueue(UpdateStatus);
-
-            while (true)
-            {
-                if (_synchQueue.TryDequeue(out var action))
-                {
-                    action();
-                }
-                else
-                {
-                    break;
-                }
-            }
+            UpdateStatus();
         }
 
-        private void UpdateStatus()
+        public void UpdateStatus()
         {
             foreach (var installationTask in _installationTasks.Where(x => x.Status == InstalationTaskStatus.Standby))
             {
@@ -68,7 +57,7 @@ namespace RemoteInstallation
 
         private void StartInstallation(InstallationTask installationTask, ComputerInstallationTask computerInstallation)
         {
-            Action<InstallationFinishedStatus> finishedCallback = status => _synchQueue.Enqueue(() => FinishedTask(installationTask, computerInstallation, status));
+            Action<InstallationFinishedStatus> finishedCallback = status => _context.Post(obj => FinishedTask(installationTask, computerInstallation, status), null);
             _installator.InstallOnComputer(computerInstallation.Installation, computerInstallation.Computer, finishedCallback);
         }
 

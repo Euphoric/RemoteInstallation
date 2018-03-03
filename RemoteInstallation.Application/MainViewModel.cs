@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using GalaSoft.MvvmLight;
@@ -11,9 +12,12 @@ namespace RemoteInstallation.Application
 {
     public class FakeRemoteInstallator : IRemoteComputerInstallator
     {
-        public void InstallOnComputer(string installation, string computer, Action<InstallationFinishedStatus> finishedCallback)
+        readonly Random _random = new Random();
+
+        public async void InstallOnComputer(string installation, string computer, Action<InstallationFinishedStatus> finishedCallback)
         {
-            //throw new NotImplementedException();
+            await Task.Delay((int)(_random.NextDouble()*1000+100));
+            finishedCallback((InstallationFinishedStatus)_random.Next(2));
         }
     }
 
@@ -29,13 +33,13 @@ namespace RemoteInstallation.Application
         {
             AddTaskCommand = new RelayCommand(AddTask);
 
-            _remoteInstaller = new RemoteInstaller(new FakeRemoteInstallator());
+            _remoteInstaller = new RemoteInstaller(SynchronizationContext.Current, new FakeRemoteInstallator());
         }
 
         private void AddTask()
         {
             _remoteInstaller.CreateTask("TestA", "TestB");
-            _remoteInstaller.Iterate();
+            _remoteInstaller.UpdateStatus();
         }
     }
 }
