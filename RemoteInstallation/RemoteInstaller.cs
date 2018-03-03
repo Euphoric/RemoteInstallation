@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 
 namespace RemoteInstallation
@@ -7,17 +8,19 @@ namespace RemoteInstallation
     public class RemoteInstaller
     {
         private readonly IRemoteComputerInstallator _installator;
-        private readonly List<InstallationTask> _installationTasks = new List<InstallationTask>();
+        private readonly ObservableCollection<InstallationTask> _installationTasks = new ObservableCollection<InstallationTask>();
 
         public RemoteInstaller(IRemoteComputerInstallator installator)
         {
             _installator = installator;
         }
 
+        public IEnumerable<InstallationTask> InstallationTasks => _installationTasks;
+
         public InstallationTask CreateTask(string installation, IEnumerable<string> computers)
         {
             var installationTasks = computers.Select(pc => new ComputerInstallationTask(installation, pc)).ToList();
-            var installationTask = new InstallationTask(installationTasks);
+            var installationTask = new InstallationTask(installation, installationTasks);
             _installationTasks.Add(installationTask);
 
             return installationTask;

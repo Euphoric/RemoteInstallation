@@ -45,6 +45,8 @@ namespace RemoteInstallation
             RemoteInstaller ri = new RemoteInstaller(installator);
             var task = ri.CreateTask("WorkX", "ComputerX");
 
+            Assert.AreEqual("WorkX", task.Installation);
+
             Assert.AreEqual(InstalationTaskStatus.Standby, task.Status);
 
             var computerInstallation = task.ComputerInstallations.Single();
