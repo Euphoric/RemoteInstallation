@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using NUnit.Framework;
 
 namespace RemoteInstallation
@@ -46,9 +45,10 @@ namespace RemoteInstallation
             RemoteInstaller ri = new RemoteInstaller(installator);
             var task = ri.CreateTask("WorkX", "ComputerX");
 
-            Assert.AreEqual("WorkX", task.Installation);
-            Assert.AreEqual("ComputerX", task.Computer);
-            Assert.AreEqual(InstalationTaskStatus.Standby, task.Status);
+            var computerInstallation = task.InstallationTasks.Single();
+            Assert.AreEqual("WorkX", computerInstallation.Installation);
+            Assert.AreEqual("ComputerX", computerInstallation.Computer);
+            Assert.AreEqual(InstalationTaskStatus.Standby, computerInstallation.Status);
         }
 
         [Test]
@@ -59,9 +59,10 @@ namespace RemoteInstallation
             var task1 = ri.CreateTask("WorkX", "ComputerX");
             var task2 = ri.CreateTask("WorkY", "ComputerY");
 
-            Assert.AreEqual("WorkY", task2.Installation);
-            Assert.AreEqual("ComputerY", task2.Computer);
-            Assert.AreEqual(InstalationTaskStatus.Standby, task2.Status);
+            var computerInstallation = task2.InstallationTasks.Single();
+            Assert.AreEqual("WorkY", computerInstallation.Installation);
+            Assert.AreEqual("ComputerY", computerInstallation.Computer);
+            Assert.AreEqual(InstalationTaskStatus.Standby, computerInstallation.Status);
         }
 
         [Test]
@@ -80,7 +81,8 @@ namespace RemoteInstallation
             Assert.AreEqual("WorkX", activeInstallation.Installation);
             Assert.AreEqual("ComputerX", activeInstallation.Computer);
 
-            Assert.AreEqual(InstalationTaskStatus.Installing, task.Status);
+            var computerInstallation = task.InstallationTasks.Single();
+            Assert.AreEqual(InstalationTaskStatus.Installing, computerInstallation.Status);
         }
 
         [Test]
@@ -88,7 +90,7 @@ namespace RemoteInstallation
         {
             RemoteComputerInstallator installator = new RemoteComputerInstallator();
             RemoteInstaller ri = new RemoteInstaller(installator);
-            var task = ri.CreateTask("WorkX", "ComputerX");
+            var task1 = ri.CreateTask("WorkX", "ComputerX");
             var task2 = ri.CreateTask("WorkY", "ComputerY");
 
             Assert.AreEqual(0, installator.ActiveInstallations.Count);
@@ -104,8 +106,6 @@ namespace RemoteInstallation
             var activeInstallation2 = installator.ActiveInstallations[1];
             Assert.AreEqual("WorkY", activeInstallation2.Installation);
             Assert.AreEqual("ComputerY", activeInstallation2.Computer);
-
-            Assert.AreEqual(InstalationTaskStatus.Installing, task.Status);
         }
 
         [Test]
@@ -122,7 +122,8 @@ namespace RemoteInstallation
 
             Assert.AreEqual(1, installator.ActiveInstallations.Count);
 
-            Assert.AreEqual(InstalationTaskStatus.Installing, task.Status);
+            var computerInstallation = task.InstallationTasks.Single();
+            Assert.AreEqual(InstalationTaskStatus.Installing, computerInstallation.Status);
         }
 
         [Test]
@@ -140,7 +141,8 @@ namespace RemoteInstallation
 
             ri.Iterate();
 
-            Assert.AreEqual(InstalationTaskStatus.Success, task.Status);
+            var computerInstallation = task.InstallationTasks.Single();
+            Assert.AreEqual(InstalationTaskStatus.Success, computerInstallation.Status);
         }
 
         [Test]
@@ -175,7 +177,8 @@ namespace RemoteInstallation
 
             ri.Iterate();
 
-            Assert.AreEqual(InstalationTaskStatus.Failed, task.Status);
+            var computerInstallation = task.InstallationTasks.Single();
+            Assert.AreEqual(InstalationTaskStatus.Failed, computerInstallation.Status);
         }
 
         [Test]

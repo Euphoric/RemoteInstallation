@@ -23,9 +23,9 @@ namespace RemoteInstallation
             return installationTask;
         }
 
-        public ComputerInstallationTask CreateTask(string installation, string computer)
+        public InstallationTask CreateTask(string installation, string computer)
         {
-            return CreateTask(installation, new[] {computer}).InstallationTasks.Single();
+            return CreateTask(installation, new[] {computer});
         }
 
         public void Iterate()
