@@ -24,10 +24,17 @@ namespace RemoteInstallation.Application
     public class MainViewModel : ViewModelBase
     {
         private readonly RemoteInstaller _remoteInstaller;
+        private InstallationTask _selectedInstallationTask;
 
         public ICommand AddTaskCommand { get; }
 
         public IEnumerable<InstallationTask> InstallationTasks => _remoteInstaller.InstallationTasks;
+
+        public InstallationTask SelectedInstallationTask
+        {
+            get => _selectedInstallationTask;
+            set => Set(nameof(SelectedInstallationTask), ref _selectedInstallationTask, value);
+        }
 
         public MainViewModel()
         {
@@ -36,9 +43,13 @@ namespace RemoteInstallation.Application
             _remoteInstaller = new RemoteInstaller(SynchronizationContext.Current, new FakeRemoteInstallator());
         }
 
+        private readonly Random _random = new Random();
+
+        private int _counter = 0;
+
         private void AddTask()
         {
-            _remoteInstaller.CreateTask("TestA", "TestB");
+            SelectedInstallationTask = _remoteInstaller.CreateTask("Installation "  +(_counter++), "Computer " + _random.Next(10));
         }
     }
 }
