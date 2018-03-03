@@ -36,9 +36,12 @@ namespace RemoteInstallation.Application
             set => Set(nameof(SelectedInstallationTask), ref _selectedInstallationTask, value);
         }
 
+        public ICommand AddBigTaskCommand { get; }
+
         public MainViewModel()
         {
             AddTaskCommand = new RelayCommand(AddTask);
+            AddBigTaskCommand = new RelayCommand(AddBigTask);
 
             _remoteInstaller = new RemoteInstaller(SynchronizationContext.Current, new FakeRemoteInstallator());
         }
@@ -50,6 +53,12 @@ namespace RemoteInstallation.Application
         private void AddTask()
         {
             SelectedInstallationTask = _remoteInstaller.CreateTask("Installation "  +(_counter++), "Computer " + _random.Next(10));
+        }
+
+        private void AddBigTask()
+        {
+            var computers = Enumerable.Range(0, 100).Select(x => "Computer " + x);
+            SelectedInstallationTask = _remoteInstaller.CreateTask("Installation " + (_counter++), computers);
         }
     }
 }
