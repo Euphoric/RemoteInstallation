@@ -11,8 +11,13 @@ namespace RemoteInstallation
         private readonly SynchronizationContext _context;
         private readonly IRemoteComputerInstallator _installator;
         private readonly ObservableCollection<InstallationTask> _installationTasks = new ObservableCollection<InstallationTask>();
+        private bool _enableInstallation = true;
 
-        public bool EnableInstallation { get; set; } = true;
+        public bool EnableInstallation
+        {
+            get => _enableInstallation;
+            set { _enableInstallation = value; UpdateStatus(); }
+        }
 
         public RemoteInstaller(SynchronizationContext context, IRemoteComputerInstallator installator)
         {
@@ -37,11 +42,6 @@ namespace RemoteInstallation
         public InstallationTask CreateTask(string installation, string computer)
         {
             return CreateTask(installation, new[] {computer});
-        }
-
-        public void Iterate()
-        {
-            UpdateStatus();
         }
 
         private void UpdateStatus()
