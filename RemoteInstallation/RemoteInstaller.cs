@@ -49,6 +49,11 @@ namespace RemoteInstallation
         {
             computerInstallationTask.Status = finishedStatus == InstallationFinishedStatus.Failed ? InstalationTaskStatus.Failed : InstalationTaskStatus.Success;
 
+            UpdateTaskStatus(installationTask);
+        }
+
+        private static void UpdateTaskStatus(InstallationTask installationTask)
+        {
             var isInstalling = installationTask.ComputerInstallations.Any(x => x.Status == InstalationTaskStatus.Installing);
 
             if (isInstalling)
