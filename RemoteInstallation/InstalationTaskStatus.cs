@@ -5,6 +5,7 @@
         Standby,
         Installing,
         Success,
-        Failed
+        Failed,
+        PartialSuccess
     }
 }

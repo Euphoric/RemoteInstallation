@@ -5,11 +5,12 @@ namespace RemoteInstallation
 {
     public class InstallationTask
     {
-        public List<ComputerInstallationTask> InstallationTasks { get; }
+        public List<ComputerInstallationTask> ComputerInstallations { get; }
+        public InstalationTaskStatus Status { get; set; }
 
         public InstallationTask(IEnumerable<ComputerInstallationTask> installationTasks)
         {
-            InstallationTasks = installationTasks.ToList();
+            ComputerInstallations = installationTasks.ToList();
         }
     }
 }

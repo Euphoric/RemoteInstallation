@@ -30,16 +30,46 @@ namespace RemoteInstallation
 
         public void Iterate()
         {
-            foreach (var installationTask in _installationTasks.SelectMany(x=>x.InstallationTasks).Where(x=>x.Status == InstalationTaskStatus.Standby))
+            foreach (var installationTask in _installationTasks.Where(x=>x.Status == InstalationTaskStatus.Standby))
             {
-                _installator.InstallOnComputer(installationTask.Installation, installationTask.Computer, status=>FinishedTask(installationTask, status));
+                foreach (var computerInstallation in installationTask.ComputerInstallations.Where(x=>x.Status == InstalationTaskStatus.Standby))
+                {
+                    _installator.InstallOnComputer(computerInstallation.Installation, computerInstallation.Computer, status => FinishedTask(installationTask, computerInstallation, status));
+                    computerInstallation.Status = InstalationTaskStatus.Installing;
+                }
+
                 installationTask.Status = InstalationTaskStatus.Installing;
             }
         }
 
-        private void FinishedTask(ComputerInstallationTask computerInstallationTask, InstallationFinishedStatus finishedStatus)
+        private void FinishedTask(
+            InstallationTask installationTask,
+            ComputerInstallationTask computerInstallationTask,
+            InstallationFinishedStatus finishedStatus)
         {
             computerInstallationTask.Status = finishedStatus == InstallationFinishedStatus.Failed ? InstalationTaskStatus.Failed : InstalationTaskStatus.Success;
+
+            var isInstalling = installationTask.ComputerInstallations.Any(x => x.Status == InstalationTaskStatus.Installing);
+
+            if (isInstalling)
+            {
+                installationTask.Status = InstalationTaskStatus.Installing;
+            }
+            else
+            {
+                if (installationTask.ComputerInstallations.All(x => x.Status == InstalationTaskStatus.Success))
+                {
+                    installationTask.Status = InstalationTaskStatus.Success;
+                }
+                else if (installationTask.ComputerInstallations.All(x => x.Status == InstalationTaskStatus.Failed))
+                {
+                    installationTask.Status = InstalationTaskStatus.Failed;
+                }
+                else
+                {
+                    installationTask.Status = InstalationTaskStatus.PartialSuccess;
+                }
+            }
         }
     }
 }
