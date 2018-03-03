@@ -197,5 +197,25 @@ namespace RemoteInstallation
             Assert.AreEqual("WorkX", activeInstallation2.Installation);
             Assert.AreEqual("ComputerY", activeInstallation2.Computer);
         }
+
+        [Test]
+        public void Multiple_computers_task_status()
+        {
+            RemoteComputerInstallator installator = new RemoteComputerInstallator();
+            RemoteInstaller ri = new RemoteInstaller(installator);
+            var tasks = ri.CreateTask("WorkX", new[] { "ComputerX", "ComputerY" });
+
+            Assert.AreEqual(2, tasks.InstallationTasks.Count);
+
+            var installation1 = tasks.InstallationTasks[0];
+            Assert.AreEqual("WorkX", installation1.Installation);
+            Assert.AreEqual("ComputerX", installation1.Computer);
+            Assert.AreEqual(InstalationTaskStatus.Standby, installation1.Status);
+
+            var installation2 = tasks.InstallationTasks[1];
+            Assert.AreEqual("WorkX", installation2.Installation);
+            Assert.AreEqual("ComputerY", installation2.Computer);
+            Assert.AreEqual(InstalationTaskStatus.Standby, installation2.Status);
+        }
     }
 }

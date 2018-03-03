@@ -14,32 +14,32 @@ namespace RemoteInstallation
             _installator = installator;
         }
 
-        public IEnumerable<InstallationTask> CreateTask(string installation, IEnumerable<string> computers)
+        public InstallationTask CreateTask(string installation, IEnumerable<string> computers)
         {
-            var installationTask = computers.Select(pc => new InstallationTask(installation, pc)).ToList();
-
-            _installationTasks.AddRange(installationTask);
+            var installationTasks = computers.Select(pc => new ComputerInstallationTask(installation, pc)).ToList();
+            var installationTask = new InstallationTask(installationTasks);
+            _installationTasks.Add(installationTask);
 
             return installationTask;
         }
 
-        public InstallationTask CreateTask(string installation, string computer)
+        public ComputerInstallationTask CreateTask(string installation, string computer)
         {
-            return CreateTask(installation, new[] {computer}).Single();
+            return CreateTask(installation, new[] {computer}).InstallationTasks.Single();
         }
 
         public void Iterate()
         {
-            foreach (var installationTask in _installationTasks.Where(x=>x.Status == InstalationTaskStatus.Standby))
+            foreach (var installationTask in _installationTasks.SelectMany(x=>x.InstallationTasks).Where(x=>x.Status == InstalationTaskStatus.Standby))
             {
                 _installator.InstallOnComputer(installationTask.Installation, installationTask.Computer, status=>FinishedTask(installationTask, status));
                 installationTask.Status = InstalationTaskStatus.Installing;
             }
         }
 
-        private void FinishedTask(InstallationTask installationTask, InstallationFinishedStatus finishedStatus)
+        private void FinishedTask(ComputerInstallationTask computerInstallationTask, InstallationFinishedStatus finishedStatus)
         {
-            installationTask.Status = finishedStatus == InstallationFinishedStatus.Failed ? InstalationTaskStatus.Failed : InstalationTaskStatus.Success;
+            computerInstallationTask.Status = finishedStatus == InstallationFinishedStatus.Failed ? InstalationTaskStatus.Failed : InstalationTaskStatus.Success;
         }
     }
 }

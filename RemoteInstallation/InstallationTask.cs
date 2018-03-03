@@ -1,16 +1,15 @@
-﻿namespace RemoteInstallation
+﻿using System.Collections.Generic;
+using System.Linq;
+
+namespace RemoteInstallation
 {
     public class InstallationTask
     {
-        public string Installation { get; }
-        public string Computer { get; }
-        public InstalationTaskStatus Status { get; set; }
+        public List<ComputerInstallationTask> InstallationTasks { get; }
 
-        public InstallationTask(string installation, string computer)
+        public InstallationTask(IEnumerable<ComputerInstallationTask> installationTasks)
         {
-            Installation = installation;
-            Computer = computer;
-            Status = InstalationTaskStatus.Standby;
+            InstallationTasks = installationTasks.ToList();
         }
     }
 }
