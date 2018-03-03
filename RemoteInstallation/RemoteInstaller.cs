@@ -11,16 +11,15 @@ namespace RemoteInstallation
         private readonly SynchronizationContext _context;
         private readonly IRemoteComputerInstallator _installator;
         private readonly ObservableCollection<InstallationTask> _installationTasks = new ObservableCollection<InstallationTask>();
-        private bool _enableInstallation = true;
 
-        public bool EnableInstallation
+        public int ConcurrentInstallationLimit
         {
-            get => _enableInstallation;
-            set { _enableInstallation = value; UpdateStatus(); }
+            get => _concurrentInstallationLimit;
+            set { _concurrentInstallationLimit = value; UpdateStatus(); }
         }
 
-        public int ConcurrentInstallationLimit { get; set; } = 4;
         private int _currentInstallationsCount;
+        private int _concurrentInstallationLimit = 4;
 
         public RemoteInstaller(SynchronizationContext context, IRemoteComputerInstallator installator)
         {
@@ -49,25 +48,22 @@ namespace RemoteInstallation
 
         private void UpdateStatus()
         {
-            if (EnableInstallation)
+            foreach (var installationTask in _installationTasks)
             {
-                foreach (var installationTask in _installationTasks)
+                var standbyInstallations = installationTask.ComputerInstallations.Where(x => x.Status == InstalationTaskStatus.Standby);
+                foreach (var computerInstallation in standbyInstallations)
                 {
-                    var standbyInstallations = installationTask.ComputerInstallations.Where(x => x.Status == InstalationTaskStatus.Standby);
-                    foreach (var computerInstallation in standbyInstallations)
+                    if (_currentInstallationsCount >= ConcurrentInstallationLimit)
                     {
-                        if (_currentInstallationsCount >= ConcurrentInstallationLimit)
-                        {
-                            break;
-                        }
-
-                        StartInstallation(installationTask, computerInstallation);
-
-                        computerInstallation.Status = InstalationTaskStatus.Installing;
+                        break;
                     }
 
-                    UpdateTaskStatus(installationTask);
+                    StartInstallation(installationTask, computerInstallation);
+
+                    computerInstallation.Status = InstalationTaskStatus.Installing;
                 }
+
+                UpdateTaskStatus(installationTask);
             }
         }
 

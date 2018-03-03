@@ -51,7 +51,7 @@ namespace RemoteInstallation
     {
         public override void Post(SendOrPostCallback d, object state)
         {
-            base.Send(d, state);
+            Send(d, state);
         }
     }
 
@@ -71,7 +71,7 @@ namespace RemoteInstallation
         [Test]
         public void Creates_installation_task()
         {
-            _ri.EnableInstallation = false;
+            _ri.ConcurrentInstallationLimit = 0;
 
             var task = _ri.CreateTask("WorkX", "ComputerX");
 
@@ -88,7 +88,7 @@ namespace RemoteInstallation
         [Test]
         public void Creates_multiple_installation_tasks()
         {
-            _ri.EnableInstallation = false;
+            _ri.ConcurrentInstallationLimit = 0;
 
             var task1 = _ri.CreateTask("WorkX", "ComputerX");
             var task2 = _ri.CreateTask("WorkY", "ComputerY");
@@ -104,13 +104,13 @@ namespace RemoteInstallation
         [Test]
         public void Installation_task_starts_installation_on_computer()
         {
-            _ri.EnableInstallation = false;
+            _ri.ConcurrentInstallationLimit = 0;
 
             var task = _ri.CreateTask("WorkX", "ComputerX");
 
             Assert.AreEqual(0, _installator.ActiveInstallations.Count);
 
-            _ri.EnableInstallation = true;
+            _ri.ConcurrentInstallationLimit = 10;
 
             var activeInstallation = _installator.ActiveInstallations.Single();
 
@@ -126,14 +126,14 @@ namespace RemoteInstallation
         [Test]
         public void Installation_tasks_starts_installation_on_computers()
         {
-            _ri.EnableInstallation = false;
+            _ri.ConcurrentInstallationLimit = 0;
 
             var task1 = _ri.CreateTask("WorkX", "ComputerX");
             var task2 = _ri.CreateTask("WorkY", "ComputerY");
 
             Assert.AreEqual(0, _installator.ActiveInstallations.Count);
 
-            _ri.EnableInstallation = true;
+            _ri.ConcurrentInstallationLimit = 10;
 
             Assert.AreEqual(2, _installator.ActiveInstallations.Count);
 
@@ -202,7 +202,7 @@ namespace RemoteInstallation
         [Test]
         public void Multiple_computers_instalations_status()
         {
-            _ri.EnableInstallation = false;
+            _ri.ConcurrentInstallationLimit = 0;
 
             var tasks = _ri.CreateTask("WorkX", new[] { "ComputerX", "ComputerY" });
 
@@ -339,6 +339,21 @@ namespace RemoteInstallation
 
                 _installator.FinishInstallationAny(InstallationFinishedStatus.Success);
             }
+        }
+
+        [Test]
+        public void Changing_concurrent_limit_runs_additional_installations()
+        {
+            _ri.ConcurrentInstallationLimit = 1;
+
+            var task = _ri.CreateTask("WorkX", new[] { "ComputerX", "ComputerY", "ComputerZ", "ComputerQ" });
+
+            Assert.AreEqual(1, task.ComputerInstallations.Count(x => x.Status == InstalationTaskStatus.Installing));
+
+            _ri.ConcurrentInstallationLimit = 2;
+
+            Assert.AreEqual(2, task.ComputerInstallations.Count(x => x.Status == InstalationTaskStatus.Installing));
+
         }
     }
 }
