@@ -19,6 +19,9 @@ namespace RemoteInstallation
             set { _enableInstallation = value; UpdateStatus(); }
         }
 
+        public int ConcurrentInstallationLimit { get; set; } = 4;
+        private int _currentInstallationsCount;
+
         public RemoteInstaller(SynchronizationContext context, IRemoteComputerInstallator installator)
         {
             _context = context;
@@ -41,25 +44,29 @@ namespace RemoteInstallation
 
         public InstallationTask CreateTask(string installation, string computer)
         {
-            return CreateTask(installation, new[] {computer});
+            return CreateTask(installation, new[] { computer });
         }
 
         private void UpdateStatus()
         {
             if (EnableInstallation)
             {
-                foreach (var installationTask in _installationTasks.Where(
-                    x => x.Status == InstalationTaskStatus.Standby))
+                foreach (var installationTask in _installationTasks)
                 {
-                    foreach (var computerInstallation in installationTask.ComputerInstallations.Where(x =>
-                        x.Status == InstalationTaskStatus.Standby))
+                    var standbyInstallations = installationTask.ComputerInstallations.Where(x => x.Status == InstalationTaskStatus.Standby);
+                    foreach (var computerInstallation in standbyInstallations)
                     {
+                        if (_currentInstallationsCount >= ConcurrentInstallationLimit)
+                        {
+                            break;
+                        }
+
                         StartInstallation(installationTask, computerInstallation);
 
                         computerInstallation.Status = InstalationTaskStatus.Installing;
                     }
 
-                    installationTask.Status = InstalationTaskStatus.Installing;
+                    UpdateTaskStatus(installationTask);
                 }
             }
         }
@@ -68,6 +75,8 @@ namespace RemoteInstallation
         {
             Action<InstallationFinishedStatus> finishedCallback = status => _context.Post(obj => FinishedTask(installationTask, computerInstallation, status), null);
             _installator.InstallOnComputer(computerInstallation.Installation, computerInstallation.Computer, finishedCallback);
+
+            _currentInstallationsCount++;
         }
 
         private void FinishedTask(
@@ -77,14 +86,24 @@ namespace RemoteInstallation
         {
             computerInstallationTask.Status = finishedStatus == InstallationFinishedStatus.Failed ? InstalationTaskStatus.Failed : InstalationTaskStatus.Success;
 
+            _currentInstallationsCount--;
+
             UpdateTaskStatus(installationTask);
+
+            UpdateStatus();
         }
 
         private static void UpdateTaskStatus(InstallationTask installationTask)
         {
-            var isInstalling = installationTask.ComputerInstallations.Any(x => x.Status == InstalationTaskStatus.Installing);
+            var isStandby = installationTask.ComputerInstallations.All(x => x.Status == InstalationTaskStatus.Standby);
 
-            if (isInstalling)
+            var isInstalling = installationTask.ComputerInstallations.Any(x => x.Status == InstalationTaskStatus.Installing || x.Status == InstalationTaskStatus.Standby);
+
+            if (isStandby)
+            {
+                installationTask.Status = InstalationTaskStatus.Standby;
+            }
+            else if (isInstalling)
             {
                 installationTask.Status = InstalationTaskStatus.Installing;
             }
