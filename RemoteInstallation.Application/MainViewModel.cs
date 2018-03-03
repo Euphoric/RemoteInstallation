@@ -13,7 +13,7 @@ namespace RemoteInstallation.Application
     {
         public void InstallOnComputer(string installation, string computer, Action<InstallationFinishedStatus> finishedCallback)
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
         }
     }
 
@@ -35,6 +35,7 @@ namespace RemoteInstallation.Application
         private void AddTask()
         {
             _remoteInstaller.CreateTask("TestA", "TestB");
+            _remoteInstaller.Iterate();
         }
     }
 }

@@ -4,7 +4,6 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:RemoteInstallation.Application"
-        xmlns:remoteInstallation="clr-namespace:RemoteInstallation;assembly=RemoteInstallation"
         mc:Ignorable="d"
         Title="MainWindow" Height="500" Width="700"
         d:DataContext="{d:DesignInstance local:MainViewModel}"
@@ -17,7 +16,7 @@
 
         <ListBox ItemsSource="{Binding InstallationTasks}">
             <ListBox.ItemTemplate>
-                <DataTemplate DataType="remoteInstallation:InstallationTask">
+                <DataTemplate>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="{Binding Installation}" Margin="3" />
                         <TextBlock Text="{Binding Status}"  Margin="3" />

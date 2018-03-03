@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -9,6 +10,7 @@ namespace RemoteInstallation
     {
         private readonly IRemoteComputerInstallator _installator;
         private readonly ObservableCollection<InstallationTask> _installationTasks = new ObservableCollection<InstallationTask>();
+        private readonly ConcurrentQueue<Action> _synchQueue = new ConcurrentQueue<Action>();
 
         public RemoteInstaller(IRemoteComputerInstallator installator)
         {
@@ -21,7 +23,8 @@ namespace RemoteInstallation
         {
             var installationTasks = computers.Select(pc => new ComputerInstallationTask(installation, pc)).ToList();
             var installationTask = new InstallationTask(installation, installationTasks);
-            _installationTasks.Add(installationTask);
+
+            _synchQueue.Enqueue(() => { _installationTasks.Add(installationTask); });
 
             return installationTask;
         }
@@ -33,16 +36,40 @@ namespace RemoteInstallation
 
         public void Iterate()
         {
-            foreach (var installationTask in _installationTasks.Where(x=>x.Status == InstalationTaskStatus.Standby))
+            _synchQueue.Enqueue(UpdateStatus);
+
+            while (true)
             {
-                foreach (var computerInstallation in installationTask.ComputerInstallations.Where(x=>x.Status == InstalationTaskStatus.Standby))
+                if (_synchQueue.TryDequeue(out var action))
                 {
-                    _installator.InstallOnComputer(computerInstallation.Installation, computerInstallation.Computer, status => FinishedTask(installationTask, computerInstallation, status));
+                    action();
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+
+        private void UpdateStatus()
+        {
+            foreach (var installationTask in _installationTasks.Where(x => x.Status == InstalationTaskStatus.Standby))
+            {
+                foreach (var computerInstallation in installationTask.ComputerInstallations.Where(x => x.Status == InstalationTaskStatus.Standby))
+                {
+                    StartInstallation(installationTask, computerInstallation);
+
                     computerInstallation.Status = InstalationTaskStatus.Installing;
                 }
 
                 installationTask.Status = InstalationTaskStatus.Installing;
             }
+        }
+
+        private void StartInstallation(InstallationTask installationTask, ComputerInstallationTask computerInstallation)
+        {
+            Action<InstallationFinishedStatus> finishedCallback = status => _synchQueue.Enqueue(() => FinishedTask(installationTask, computerInstallation, status));
+            _installator.InstallOnComputer(computerInstallation.Installation, computerInstallation.Computer, finishedCallback);
         }
 
         private void FinishedTask(
