@@ -39,7 +39,6 @@ namespace RemoteInstallation.Application
         private void AddTask()
         {
             _remoteInstaller.CreateTask("TestA", "TestB");
-            _remoteInstaller.UpdateStatus();
         }
     }
 }

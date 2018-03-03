@@ -12,6 +12,8 @@ namespace RemoteInstallation
         private readonly IRemoteComputerInstallator _installator;
         private readonly ObservableCollection<InstallationTask> _installationTasks = new ObservableCollection<InstallationTask>();
 
+        public bool EnableInstallation { get; set; } = true;
+
         public RemoteInstaller(SynchronizationContext context, IRemoteComputerInstallator installator)
         {
             _context = context;
@@ -27,6 +29,8 @@ namespace RemoteInstallation
 
             _installationTasks.Add(installationTask);
 
+            UpdateStatus();
+
             return installationTask;
         }
 
@@ -40,18 +44,23 @@ namespace RemoteInstallation
             UpdateStatus();
         }
 
-        public void UpdateStatus()
+        private void UpdateStatus()
         {
-            foreach (var installationTask in _installationTasks.Where(x => x.Status == InstalationTaskStatus.Standby))
+            if (EnableInstallation)
             {
-                foreach (var computerInstallation in installationTask.ComputerInstallations.Where(x => x.Status == InstalationTaskStatus.Standby))
+                foreach (var installationTask in _installationTasks.Where(
+                    x => x.Status == InstalationTaskStatus.Standby))
                 {
-                    StartInstallation(installationTask, computerInstallation);
+                    foreach (var computerInstallation in installationTask.ComputerInstallations.Where(x =>
+                        x.Status == InstalationTaskStatus.Standby))
+                    {
+                        StartInstallation(installationTask, computerInstallation);
 
-                    computerInstallation.Status = InstalationTaskStatus.Installing;
+                        computerInstallation.Status = InstalationTaskStatus.Installing;
+                    }
+
+                    installationTask.Status = InstalationTaskStatus.Installing;
                 }
-
-                installationTask.Status = InstalationTaskStatus.Installing;
             }
         }
 

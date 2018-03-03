@@ -48,20 +48,22 @@ namespace RemoteInstallation
     public class RemoteInstallerSpec
     {
         private RemoteComputerInstallator _installator;
-        private RemoteInstaller _ri;
+        private RemoteInstaller ri;
 
         [SetUp]
         public void Setup()
         {
             var synchContext = new FakeSynchronizationContext();
             _installator = new RemoteComputerInstallator();
-            _ri = new RemoteInstaller(synchContext, _installator);
+            ri = new RemoteInstaller(synchContext, _installator);
         }
 
         [Test]
         public void Creates_installation_task()
         {
-            var task = _ri.CreateTask("WorkX", "ComputerX");
+            ri.EnableInstallation = false;
+
+            var task = ri.CreateTask("WorkX", "ComputerX");
 
             Assert.AreEqual("WorkX", task.Installation);
 
@@ -76,8 +78,10 @@ namespace RemoteInstallation
         [Test]
         public void Creates_multiple_installation_tasks()
         {
-            var task1 = _ri.CreateTask("WorkX", "ComputerX");
-            var task2 = _ri.CreateTask("WorkY", "ComputerY");
+            ri.EnableInstallation = false;
+
+            var task1 = ri.CreateTask("WorkX", "ComputerX");
+            var task2 = ri.CreateTask("WorkY", "ComputerY");
 
             Assert.AreEqual(InstalationTaskStatus.Standby, task2.Status);
 
@@ -90,11 +94,15 @@ namespace RemoteInstallation
         [Test]
         public void Installation_task_starts_installation_on_computer()
         {
-            var task = _ri.CreateTask("WorkX", "ComputerX");
+            ri.EnableInstallation = false;
+
+            var task = ri.CreateTask("WorkX", "ComputerX");
 
             Assert.AreEqual(0, _installator.ActiveInstallations.Count);
 
-            _ri.Iterate();
+            ri.EnableInstallation = true;
+
+            ri.Iterate();
 
             var activeInstallation = _installator.ActiveInstallations.Single();
 
@@ -110,12 +118,16 @@ namespace RemoteInstallation
         [Test]
         public void Installation_tasks_starts_installation_on_computers()
         {
-            var task1 = _ri.CreateTask("WorkX", "ComputerX");
-            var task2 = _ri.CreateTask("WorkY", "ComputerY");
+            ri.EnableInstallation = false;
+
+            var task1 = ri.CreateTask("WorkX", "ComputerX");
+            var task2 = ri.CreateTask("WorkY", "ComputerY");
 
             Assert.AreEqual(0, _installator.ActiveInstallations.Count);
 
-            _ri.Iterate();
+            ri.EnableInstallation = true;
+
+            ri.Iterate();
 
             Assert.AreEqual(2, _installator.ActiveInstallations.Count);
 
@@ -131,12 +143,10 @@ namespace RemoteInstallation
         [Test]
         public void Iterating_again_should_not_result_in_multiple_installations()
         {
-            var task = _ri.CreateTask("WorkX", "ComputerX");
+            var task = ri.CreateTask("WorkX", "ComputerX");
 
-            Assert.AreEqual(0, _installator.ActiveInstallations.Count);
-
-            _ri.Iterate();
-            _ri.Iterate();
+            ri.Iterate();
+            ri.Iterate();
 
             Assert.AreEqual(1, _installator.ActiveInstallations.Count);
 
@@ -147,15 +157,13 @@ namespace RemoteInstallation
         [Test]
         public void Finished_installation_should_be_reflected_in_task()
         {
-            var task = _ri.CreateTask("WorkX", "ComputerX");
+            var task = ri.CreateTask("WorkX", "ComputerX");
 
-            Assert.AreEqual(0, _installator.ActiveInstallations.Count);
-
-            _ri.Iterate();
+            ri.Iterate();
 
             _installator.FinishInstallation("WorkX", "ComputerX", InstallationFinishedStatus.Success);
 
-            _ri.Iterate();
+            ri.Iterate();
 
             Assert.AreEqual(InstalationTaskStatus.Success, task.Status);
 
@@ -166,15 +174,13 @@ namespace RemoteInstallation
         [Test]
         public void Installation_can_fail()
         {
-            var task = _ri.CreateTask("WorkX", "ComputerX");
+            var task = ri.CreateTask("WorkX", "ComputerX");
 
-            Assert.AreEqual(0, _installator.ActiveInstallations.Count);
-
-            _ri.Iterate();
+            ri.Iterate();
 
             _installator.FinishInstallation("WorkX", "ComputerX", InstallationFinishedStatus.Failed);
 
-            _ri.Iterate();
+            ri.Iterate();
 
             Assert.AreEqual(InstalationTaskStatus.Failed, task.Status);
 
@@ -185,9 +191,9 @@ namespace RemoteInstallation
         [Test]
         public void Single_task_can_install_on_multiple_computers()
         {
-            var tasks = _ri.CreateTask("WorkX", new []{ "ComputerX", "ComputerY"});
+            var tasks = ri.CreateTask("WorkX", new []{ "ComputerX", "ComputerY"});
 
-            _ri.Iterate();
+            ri.Iterate();
 
             Assert.AreEqual(2, _installator.ActiveInstallations.Count);
 
@@ -203,7 +209,9 @@ namespace RemoteInstallation
         [Test]
         public void Multiple_computers_instalations_status()
         {
-            var tasks = _ri.CreateTask("WorkX", new[] { "ComputerX", "ComputerY" });
+            ri.EnableInstallation = false;
+
+            var tasks = ri.CreateTask("WorkX", new[] { "ComputerX", "ComputerY" });
 
             Assert.AreEqual(2, tasks.ComputerInstallations.Count);
 
@@ -221,21 +229,21 @@ namespace RemoteInstallation
         [Test]
         public void Multiple_computers_task_status_complete_sucess()
         {
-            var task = _ri.CreateTask("WorkX", new[] { "ComputerX", "ComputerY" });
+            var task = ri.CreateTask("WorkX", new[] { "ComputerX", "ComputerY" });
 
-            Assert.AreEqual(InstalationTaskStatus.Standby, task.Status);
+            Assert.AreEqual(InstalationTaskStatus.Installing, task.Status);
 
-            _ri.Iterate();
+            ri.Iterate();
 
             _installator.FinishInstallation("WorkX", "ComputerX", InstallationFinishedStatus.Success);
 
-            _ri.Iterate();
+            ri.Iterate();
 
             Assert.AreEqual(InstalationTaskStatus.Installing, task.Status);
 
             _installator.FinishInstallation("WorkX", "ComputerY", InstallationFinishedStatus.Success);
 
-            _ri.Iterate();
+            ri.Iterate();
 
             Assert.AreEqual(InstalationTaskStatus.Success, task.Status);
         }
@@ -243,21 +251,21 @@ namespace RemoteInstallation
         [Test]
         public void Multiple_computers_task_status_complete_failure()
         {
-            var task = _ri.CreateTask("WorkX", new[] { "ComputerX", "ComputerY" });
+            var task = ri.CreateTask("WorkX", new[] { "ComputerX", "ComputerY" });
 
-            Assert.AreEqual(InstalationTaskStatus.Standby, task.Status);
+            Assert.AreEqual(InstalationTaskStatus.Installing, task.Status);
 
-            _ri.Iterate();
+            ri.Iterate();
 
             _installator.FinishInstallation("WorkX", "ComputerX", InstallationFinishedStatus.Failed);
 
-            _ri.Iterate();
+            ri.Iterate();
 
             Assert.AreEqual(InstalationTaskStatus.Installing, task.Status);
 
             _installator.FinishInstallation("WorkX", "ComputerY", InstallationFinishedStatus.Failed);
 
-            _ri.Iterate();
+            ri.Iterate();
 
             Assert.AreEqual(InstalationTaskStatus.Failed, task.Status);
         }
@@ -265,21 +273,21 @@ namespace RemoteInstallation
         [Test]
         public void Multiple_computers_task_status_partial_success_1()
         {
-            var task = _ri.CreateTask("WorkX", new[] { "ComputerX", "ComputerY" });
+            var task = ri.CreateTask("WorkX", new[] { "ComputerX", "ComputerY" });
 
-            Assert.AreEqual(InstalationTaskStatus.Standby, task.Status);
+            Assert.AreEqual(InstalationTaskStatus.Installing, task.Status);
 
-            _ri.Iterate();
+            ri.Iterate();
 
             _installator.FinishInstallation("WorkX", "ComputerX", InstallationFinishedStatus.Success);
 
-            _ri.Iterate();
+            ri.Iterate();
 
             Assert.AreEqual(InstalationTaskStatus.Installing, task.Status);
 
             _installator.FinishInstallation("WorkX", "ComputerY", InstallationFinishedStatus.Failed);
 
-            _ri.Iterate();
+            ri.Iterate();
 
             Assert.AreEqual(InstalationTaskStatus.PartialSuccess, task.Status);
         }
@@ -287,21 +295,21 @@ namespace RemoteInstallation
         [Test]
         public void Multiple_computers_task_status_partial_success_2()
         {
-            var task = _ri.CreateTask("WorkX", new[] { "ComputerX", "ComputerY" });
+            var task = ri.CreateTask("WorkX", new[] { "ComputerX", "ComputerY" });
 
-            Assert.AreEqual(InstalationTaskStatus.Standby, task.Status);
+            Assert.AreEqual(InstalationTaskStatus.Installing, task.Status);
 
-            _ri.Iterate();
+            ri.Iterate();
 
             _installator.FinishInstallation("WorkX", "ComputerX", InstallationFinishedStatus.Failed);
 
-            _ri.Iterate();
+            ri.Iterate();
 
             Assert.AreEqual(InstalationTaskStatus.Installing, task.Status);
 
             _installator.FinishInstallation("WorkX", "ComputerY", InstallationFinishedStatus.Success);
 
-            _ri.Iterate();
+            ri.Iterate();
 
             Assert.AreEqual(InstalationTaskStatus.PartialSuccess, task.Status);
         }
