@@ -91,11 +91,16 @@ namespace RemoteInstallation
 
         private static void UpdateTaskStatus(InstallationTask installationTask)
         {
+            var isStopped = installationTask.ComputerInstallations.Any(x => x.Status == InstalationTaskStatus.Stopped);
             var isStandby = installationTask.ComputerInstallations.All(x => x.Status == InstalationTaskStatus.Standby);
 
             var isInstalling = installationTask.ComputerInstallations.Any(x => x.Status == InstalationTaskStatus.Installing || x.Status == InstalationTaskStatus.Standby);
 
-            if (isStandby)
+            if (isStopped)
+            {
+                installationTask.Status = InstalationTaskStatus.Stopped;
+            }
+            else if (isStandby)
             {
                 installationTask.Status = InstalationTaskStatus.Standby;
             }
@@ -118,6 +123,22 @@ namespace RemoteInstallation
                     installationTask.Status = InstalationTaskStatus.PartialSuccess;
                 }
             }
+        }
+
+        public void StopTask(InstallationTask task)
+        {
+            foreach (var installation in task.ComputerInstallations)
+            {
+                if (installation.Status == InstalationTaskStatus.Installing
+                    || installation.Status == InstalationTaskStatus.Success
+                    || installation.Status == InstalationTaskStatus.Failed)
+                {
+                    continue;
+                }
+
+                installation.Status = InstalationTaskStatus.Stopped;
+            }
+            UpdateTaskStatus(task);
         }
     }
 }

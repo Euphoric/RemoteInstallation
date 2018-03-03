@@ -6,6 +6,7 @@
         Installing,
         Success,
         Failed,
-        PartialSuccess
+        PartialSuccess,
+        Stopped
     }
 }

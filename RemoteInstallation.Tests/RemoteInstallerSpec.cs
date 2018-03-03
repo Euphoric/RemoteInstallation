@@ -353,7 +353,135 @@ namespace RemoteInstallation
             _ri.ConcurrentInstallationLimit = 2;
 
             Assert.AreEqual(2, task.ComputerInstallations.Count(x => x.Status == InstalationTaskStatus.Installing));
+        }
 
+        [Test]
+        public void Task_can_be_stopped()
+        {
+            _ri.ConcurrentInstallationLimit = 1;
+
+            var task1 = _ri.CreateTask("WorkX", "ComputerX");
+            var task2 = _ri.CreateTask("WorkY", "ComputerY");
+
+            _ri.StopTask(task2);
+
+            Assert.AreEqual(InstalationTaskStatus.Stopped, task2.ComputerInstallations[0].Status);
+            Assert.AreEqual(InstalationTaskStatus.Stopped, task2.Status);
+        }
+
+        [Test]
+        public void All_installations_within_task_are_stopped()
+        {
+            _ri.ConcurrentInstallationLimit = 1;
+
+            var task1 = _ri.CreateTask("WorkX", "ComputerX");
+            var task2 = _ri.CreateTask("WorkY", new []{"ComputerY", "ComputerZ"});
+
+            _ri.StopTask(task2);
+
+            Assert.IsTrue(task2.ComputerInstallations.All(x=>x.Status == InstalationTaskStatus.Stopped));
+            Assert.AreEqual(InstalationTaskStatus.Stopped, task2.Status);
+        }
+
+        [Test]
+        public void Task_cannot_be_stopped_when_installing()
+        {
+            _ri.ConcurrentInstallationLimit = 1;
+
+            var task1 = _ri.CreateTask("WorkX", "ComputerX");
+
+            _ri.StopTask(task1);
+
+            Assert.AreEqual(InstalationTaskStatus.Installing, task1.ComputerInstallations[0].Status);
+            Assert.AreEqual(InstalationTaskStatus.Installing, task1.Status);
+        }
+
+        [Test]
+        public void Task_cannot_be_stopped_when_success()
+        {
+            _ri.ConcurrentInstallationLimit = 1;
+
+            var task1 = _ri.CreateTask("WorkX", "ComputerX");
+            _installator.FinishInstallationAny(InstallationFinishedStatus.Success);
+
+            _ri.StopTask(task1);
+
+            Assert.AreEqual(InstalationTaskStatus.Success, task1.ComputerInstallations[0].Status);
+            Assert.AreEqual(InstalationTaskStatus.Success, task1.Status);
+        }
+
+        [Test]
+        public void Task_cannot_be_stopped_when_failed()
+        {
+            _ri.ConcurrentInstallationLimit = 1;
+
+            var task1 = _ri.CreateTask("WorkX", "ComputerX");
+            _installator.FinishInstallationAny(InstallationFinishedStatus.Failed);
+
+            _ri.StopTask(task1);
+
+            Assert.AreEqual(InstalationTaskStatus.Failed, task1.ComputerInstallations[0].Status);
+            Assert.AreEqual(InstalationTaskStatus.Failed, task1.Status);
+        }
+
+        [Test]
+        public void Partially_stops_task_when_installing()
+        {
+            _ri.ConcurrentInstallationLimit = 1;
+
+            var task1 = _ri.CreateTask("WorkX", new []{ "ComputerX", "ComputerY"});
+
+            _ri.StopTask(task1);
+
+            Assert.AreEqual(InstalationTaskStatus.Installing, task1.ComputerInstallations[0].Status);
+            Assert.AreEqual(InstalationTaskStatus.Stopped, task1.ComputerInstallations[1].Status);
+            Assert.AreEqual(InstalationTaskStatus.Stopped, task1.Status);
+        }
+
+        [Test]
+        public void Partially_stops_task_when_success()
+        {
+            _ri.ConcurrentInstallationLimit = 1;
+
+            var task1 = _ri.CreateTask("WorkX", new[] { "ComputerX", "ComputerY", "ComputerZ" });
+            _installator.FinishInstallationAny(InstallationFinishedStatus.Success);
+
+            _ri.StopTask(task1);
+
+            Assert.AreEqual(InstalationTaskStatus.Success, task1.ComputerInstallations[0].Status);
+            Assert.AreEqual(InstalationTaskStatus.Installing, task1.ComputerInstallations[1].Status);
+            Assert.AreEqual(InstalationTaskStatus.Stopped, task1.ComputerInstallations[2].Status);
+            Assert.AreEqual(InstalationTaskStatus.Stopped, task1.Status);
+        }
+
+        [Test]
+        public void Partially_stops_task_when_failed()
+        {
+            _ri.ConcurrentInstallationLimit = 1;
+
+            var task1 = _ri.CreateTask("WorkX", new[] { "ComputerX", "ComputerY", "ComputerZ" });
+            _installator.FinishInstallationAny(InstallationFinishedStatus.Failed);
+
+            _ri.StopTask(task1);
+
+            Assert.AreEqual(InstalationTaskStatus.Failed, task1.ComputerInstallations[0].Status);
+            Assert.AreEqual(InstalationTaskStatus.Installing, task1.ComputerInstallations[1].Status);
+            Assert.AreEqual(InstalationTaskStatus.Stopped, task1.ComputerInstallations[2].Status);
+            Assert.AreEqual(InstalationTaskStatus.Stopped, task1.Status);
+        }
+
+        [Test]
+        public void Task_finished_after_partially_stopped()
+        {
+            _ri.ConcurrentInstallationLimit = 1;
+
+            var task1 = _ri.CreateTask("WorkX", new[] { "ComputerX", "ComputerY" });
+
+            _ri.StopTask(task1);
+
+            _installator.FinishInstallationAny(InstallationFinishedStatus.Success);
+
+            Assert.AreEqual(InstalationTaskStatus.Stopped, task1.Status);
         }
     }
 }

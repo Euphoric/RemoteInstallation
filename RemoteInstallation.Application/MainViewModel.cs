@@ -38,10 +38,13 @@ namespace RemoteInstallation.Application
 
         public ICommand AddBigTaskCommand { get; }
 
+        public ICommand StopTaskCommand { get; }
+
         public MainViewModel()
         {
             AddTaskCommand = new RelayCommand(AddTask);
             AddBigTaskCommand = new RelayCommand(AddBigTask);
+            StopTaskCommand = new RelayCommand(StopTask);
 
             _remoteInstaller = new RemoteInstaller(SynchronizationContext.Current, new FakeRemoteInstallator());
         }
@@ -59,6 +62,11 @@ namespace RemoteInstallation.Application
         {
             var computers = Enumerable.Range(0, 100).Select(x => "Computer " + x);
             SelectedInstallationTask = _remoteInstaller.CreateTask("Installation " + (_counter++), computers);
+        }
+
+        private void StopTask()
+        {
+            _remoteInstaller.StopTask(SelectedInstallationTask);
         }
     }
 }

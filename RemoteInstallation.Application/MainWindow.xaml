@@ -44,6 +44,7 @@
         <StackPanel Grid.Column="1" Grid.RowSpan="2" >
             <Button  Content="Add task" Margin="5" Command="{Binding AddTaskCommand}" />
             <Button  Content="Add big task" Margin="5" Command="{Binding AddBigTaskCommand}" />
+            <Button  Content="Stop task" Margin="5" Command="{Binding StopTaskCommand}" />
         </StackPanel>
     </Grid>
 </Window>
