@@ -1,8 +1,9 @@
-﻿namespace RemoteInstallation
+﻿using System;
+
+namespace RemoteInstallation
 {
     public interface IRemoteComputerInstallator
     {
-        void InstallOnComputer(string installation, string computer);
-        bool GetFinishStatus(string installation, string computer);
+        void InstallOnComputer(string installation, string computer, Action finishedCallback);
     }
 }

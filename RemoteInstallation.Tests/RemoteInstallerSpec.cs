@@ -10,36 +10,30 @@ namespace RemoteInstallation
     {
         public class ActiveInstallation
         {
-            public ActiveInstallation(string installation, string computer)
+            public ActiveInstallation(string installation, string computer, Action finishedCallback)
             {
                 Installation = installation;
                 Computer = computer;
+                FinishedCallback = finishedCallback;
             }
 
             public string Installation { get; }
             public string Computer { get; }
-            public bool Finish { get; set; }
+            public Action FinishedCallback { get; }
         }
 
         public List<ActiveInstallation> ActiveInstallations { get;  } = new List<ActiveInstallation>();
 
-        public void InstallOnComputer(string installation, string computer)
+        public void InstallOnComputer(string installation, string computer, Action finishedCallback)
         {
-            ActiveInstallations.Add(new ActiveInstallation(installation, computer));
-        }
-
-        public bool GetFinishStatus(string installation, string computer)
-        {
-            var queriedInstallation = ActiveInstallations.Single(x => x.Installation == installation && x.Computer == computer);
-            if (queriedInstallation.Finish)
-                ActiveInstallations.Remove(queriedInstallation);
-            return queriedInstallation.Finish;
+            ActiveInstallations.Add(new ActiveInstallation(installation, computer, finishedCallback));
         }
 
         public void FinishInstallation(string installation, string computer)
         {
             var installationToFinish = ActiveInstallations.Single(x => x.Installation == installation && x.Computer == computer);
-            installationToFinish.Finish = true;
+            ActiveInstallations.Remove(installationToFinish);
+            installationToFinish.FinishedCallback();
         }
     }
 

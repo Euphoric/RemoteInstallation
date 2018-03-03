@@ -27,18 +27,14 @@ namespace RemoteInstallation
         {
             foreach (var installationTask in _installationTasks.Where(x=>x.Status == InstalationTaskStatus.Standby))
             {
-                _installator.InstallOnComputer(installationTask.Installation, installationTask.Computer);
+                _installator.InstallOnComputer(installationTask.Installation, installationTask.Computer, ()=>FinishedTask(installationTask));
                 installationTask.Status = InstalationTaskStatus.Installing;
             }
+        }
 
-            foreach (var installationTask in _installationTasks.Where(x=>x.Status == InstalationTaskStatus.Installing))
-            {
-                var finished = _installator.GetFinishStatus(installationTask.Installation, installationTask.Computer);
-                if (finished)
-                {
-                    installationTask.Status = InstalationTaskStatus.Success;
-                }
-            }
+        private void FinishedTask(InstallationTask installationTask)
+        {
+            installationTask.Status = InstalationTaskStatus.Success;
         }
     }
 }
