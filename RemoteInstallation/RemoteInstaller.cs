@@ -14,13 +14,18 @@ namespace RemoteInstallation
             _installator = installator;
         }
 
-        public InstallationTask CreateTask(string installation, string computer)
+        public IEnumerable<InstallationTask> CreateTask(string installation, IEnumerable<string> computers)
         {
-            var installationTask = new InstallationTask(installation, computer);
+            var installationTask = computers.Select(pc => new InstallationTask(installation, pc)).ToList();
 
-            _installationTasks.Add(installationTask);
+            _installationTasks.AddRange(installationTask);
 
             return installationTask;
+        }
+
+        public InstallationTask CreateTask(string installation, string computer)
+        {
+            return CreateTask(installation, new[] {computer}).Single();
         }
 
         public void Iterate()
