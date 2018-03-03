@@ -4,6 +4,7 @@
     {
         Standby,
         Installing,
-        Success
+        Success,
+        Failed
     }
 }

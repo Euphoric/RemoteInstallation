@@ -10,7 +10,7 @@ namespace RemoteInstallation
     {
         public class ActiveInstallation
         {
-            public ActiveInstallation(string installation, string computer, Action finishedCallback)
+            public ActiveInstallation(string installation, string computer, Action<InstallationFinishedStatus> finishedCallback)
             {
                 Installation = installation;
                 Computer = computer;
@@ -19,21 +19,21 @@ namespace RemoteInstallation
 
             public string Installation { get; }
             public string Computer { get; }
-            public Action FinishedCallback { get; }
+            public Action<InstallationFinishedStatus> FinishedCallback { get; }
         }
 
         public List<ActiveInstallation> ActiveInstallations { get;  } = new List<ActiveInstallation>();
 
-        public void InstallOnComputer(string installation, string computer, Action finishedCallback)
+        public void InstallOnComputer(string installation, string computer, Action<InstallationFinishedStatus> finishedCallback)
         {
             ActiveInstallations.Add(new ActiveInstallation(installation, computer, finishedCallback));
         }
 
-        public void FinishInstallation(string installation, string computer)
+        public void FinishInstallation(string installation, string computer, InstallationFinishedStatus finishedStatus)
         {
             var installationToFinish = ActiveInstallations.Single(x => x.Installation == installation && x.Computer == computer);
             ActiveInstallations.Remove(installationToFinish);
-            installationToFinish.FinishedCallback();
+            installationToFinish.FinishedCallback(finishedStatus);
         }
     }
 
@@ -136,7 +136,7 @@ namespace RemoteInstallation
 
             ri.Iterate();
 
-            installator.FinishInstallation("WorkX", "ComputerX");
+            installator.FinishInstallation("WorkX", "ComputerX", InstallationFinishedStatus.Success);
 
             ri.Iterate();
 
@@ -154,10 +154,28 @@ namespace RemoteInstallation
 
             ri.Iterate();
 
-            installator.FinishInstallation("WorkX", "ComputerX");
+            installator.FinishInstallation("WorkX", "ComputerX", InstallationFinishedStatus.Success);
 
             ri.Iterate();
             ri.Iterate();
+        }
+
+        [Test]
+        public void Installation_can_fail()
+        {
+            RemoteComputerInstallator installator = new RemoteComputerInstallator();
+            RemoteInstaller ri = new RemoteInstaller(installator);
+            var task = ri.CreateTask("WorkX", "ComputerX");
+
+            Assert.AreEqual(0, installator.ActiveInstallations.Count);
+
+            ri.Iterate();
+
+            installator.FinishInstallation("WorkX", "ComputerX", InstallationFinishedStatus.Failed);
+
+            ri.Iterate();
+
+            Assert.AreEqual(InstalationTaskStatus.Failed, task.Status);
         }
     }
 }
